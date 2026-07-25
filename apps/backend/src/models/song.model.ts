@@ -32,7 +32,7 @@ export interface ISong extends Document {
   titulo: string;
   tom: string;
   momentoLiturgico: LiturgicalMoment;
-  letra: string[];
+  letra: string[][];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -46,7 +46,7 @@ const SongSchema: Schema = new Schema(
       enum: Object.values(LiturgicalMoment), 
       required: true 
     },
-    letra: { type: [String], required: true },
+    letra: { type: [[String]], required: true },
   },
   { timestamps: true }
 );

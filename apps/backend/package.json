@@ -18,13 +18,14 @@
     "express": "^5.2.1",
     "mongodb": "^7.4.0",
     "mongoose": "^9.7.3",
-    "pug": "^3.0.4",
-    "puppeteer": "^25.3.0"
+    "pdfmake": "^0.2.18"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
-    "@types/pug": "^2.0.10",
-    "tsx": "^4.19.4"
+    "@types/node": "^22.10.0",
+    "@types/pdfmake": "^0.2.11",
+    "tsx": "^4.19.4",
+    "typescript": "^5.7.2"
   }
 }

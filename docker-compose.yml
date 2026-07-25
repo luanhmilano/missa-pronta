@@ -1,0 +1,52 @@
+name: musicas-missa
+
+services:
+  mongodb:
+    image: mongo:7.0
+    container_name: musicas-missa-mongo
+    restart: always
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_DATABASE=musicas-missa
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  backend:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
+    container_name: musicas-missa-backend
+    restart: always
+    ports:
+      - "3333:3333"
+    environment:
+      - PORT=3333
+      - MONGO_URI=mongodb://mongodb:27017/musicas-missa
+      - NODE_ENV=production
+    depends_on:
+      mongodb:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: .
+      dockerfile: apps/frontend/Dockerfile
+    container_name: musicas-missa-frontend
+    restart: always
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://localhost:3333
+    depends_on:
+      - backend
+
+volumes:
+  mongo_data:
+    driver: local

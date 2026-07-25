@@ -266,6 +266,11 @@ export function MassArchive() {
     }
   };
 
+  const handleViewHtml = (massId: string) => {
+    const baseURL = api.defaults.baseURL || 'http://localhost:3333';
+    window.open(`${baseURL}/missas/${massId}/html`, '_blank');
+  };
+
   const handlePdf = async (massId: string) => {
     const response = await api.get(`/missas/${massId}/pdf`, {
       responseType: 'blob'
@@ -289,7 +294,7 @@ export function MassArchive() {
         <div className="archive-header">
           <div>
             <p className="archive-eyebrow">Acervo de missas</p>
-            <h2>Visualize, edite e gere o PDF das missas salvas</h2>
+            <h2>Visualize em HTML, edite e gere o PDF das missas salvas</h2>
           </div>
           <button type="button" className="archive-secondary" onClick={() => { void refreshData(); }}>
             Atualizar lista
@@ -392,6 +397,9 @@ export function MassArchive() {
                     </ul>
                   </div>
                   <div className="archive-item-actions">
+                    <button type="button" className="archive-secondary" onClick={() => handleViewHtml(mass._id)}>
+                      Ver HTML
+                    </button>
                     <button type="button" className="archive-secondary" onClick={() => startEdit(mass)}>
                       Editar
                     </button>

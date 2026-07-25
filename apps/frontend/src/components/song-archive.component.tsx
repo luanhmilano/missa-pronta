@@ -36,15 +36,17 @@ function toEditorState(song: Song): SongEditorState {
     titulo: song.titulo,
     tom: song.tom ?? '',
     momentoLiturgico: song.momentoLiturgico,
-    letra: Array.isArray(song.letra) ? song.letra.join('\n\n') : ''
+    letra: Array.isArray(song.letra)
+      ? song.letra.map(strophe => (Array.isArray(strophe) ? strophe.join('\n') : strophe)).join('\n\n')
+      : ''
   };
 }
 
-function parseLyrics(text: string): string[] {
+function parseLyrics(text: string): string[][] {
   return text
-    .split('\n\n')
-    .map(part => part.trim())
-    .filter(Boolean);
+    .split(/\r?\n\s*\r?\n/)
+    .map(strophe => strophe.split(/\r?\n/).map(line => line.trim()).filter(Boolean))
+    .filter(strophe => strophe.length > 0);
 }
 
 function normalizeText(value: string) {

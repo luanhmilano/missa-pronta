@@ -14,7 +14,7 @@ export interface Song {
   titulo: string;
   tom: string;
   momentoLiturgico: LiturgicalMoment;
-  letra: string[];
+  letra: string[][];
 }
 
 export interface MissaSongRef {

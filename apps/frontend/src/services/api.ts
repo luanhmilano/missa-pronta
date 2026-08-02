@@ -5,11 +5,15 @@ export const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('musicas_missa_token');
+  if (token && config.headers) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+
   console.debug('[frontend][api] request', {
     method: config.method,
     url: `${config.baseURL ?? ''}${config.url ?? ''}`,
     params: config.params,
-    data: config.data,
   });
 
   return config;
@@ -17,22 +21,12 @@ api.interceptors.request.use((config) => {
 
 api.interceptors.response.use(
   (response) => {
-    console.debug('[frontend][api] response', {
-      status: response.status,
-      url: response.config.url,
-      data: response.data,
-    });
-
     return response;
   },
   (error) => {
-    console.error('[frontend][api] error', {
-      message: error.message,
-      status: error.response?.status,
-      url: error.config?.url,
-      data: error.response?.data,
-    });
-
+    if (error.response?.status === 401 || error.response?.status === 403) {
+      console.warn('[frontend][api] Acesso não autorizado ou sessão expirada.');
+    }
     return Promise.reject(error);
   }
 );

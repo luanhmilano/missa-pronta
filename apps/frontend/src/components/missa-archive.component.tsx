@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { api } from '../services/api';
 import type { Missa, MissaSongRef, Song } from '../types';
 import { ConfirmationModal } from './confirmation-modal.component';
+import { useAuth } from '../context/auth.context';
 
 const MASSES_PER_PAGE = 2;
 
@@ -88,6 +89,7 @@ function normalizeText(value: string) {
 }
 
 export function MassArchive() {
+  const { isAdmin } = useAuth();
   const [songs, setSongs] = useState<Song[]>([]);
   const [missas, setMissas] = useState<Missa[]>([]);
   const [loading, setLoading] = useState(true);
@@ -293,8 +295,8 @@ export function MassArchive() {
       <div className="archive-card">
         <div className="archive-header">
           <div>
-            <p className="archive-eyebrow">Acervo de missas</p>
-            <h2>Visualize em HTML, edite e gere o PDF das missas salvas</h2>
+            <p className="archive-eyebrow">Acervo de Missas</p>
+            <h2>{isAdmin ? 'Visualize, monte e exporte os repertórios das missas' : 'Consulte repertórios, visualize em HTML e baixe PDFs de Missas'}</h2>
           </div>
           <button type="button" className="archive-secondary" onClick={() => { void refreshData(); }}>
             Atualizar lista
@@ -303,61 +305,63 @@ export function MassArchive() {
 
         {message && <p className="archive-message">{message}</p>}
 
-        <div className="archive-layout">
-          <form className="archive-form" onSubmit={handleSubmit}>
-            <h3>{title}</h3>
+        <div className={`archive-layout ${!isAdmin ? 'archive-layout--full' : ''}`}>
+          {isAdmin && (
+            <form className="archive-form" onSubmit={handleSubmit}>
+              <h3>{title}</h3>
 
-            <label>
-              Nome
-              <input
-                type="text"
-                value={formData.nome}
-                placeholder='Ex: Missa de Domingo'
-                onChange={event => setFormData({ ...formData, nome: event.target.value })}
-                required
-              />
-            </label>
+              <label>
+                Nome
+                <input
+                  type="text"
+                  value={formData.nome}
+                  placeholder='Ex: Missa de Domingo'
+                  onChange={event => setFormData({ ...formData, nome: event.target.value })}
+                  required
+                />
+              </label>
 
-            <label>
-              Data
-              <input
-                type="date"
-                value={formData.data}
-                onChange={event => setFormData({ ...formData, data: event.target.value })}
-                required
-              />
-            </label>
+              <label>
+                Data
+                <input
+                  type="date"
+                  value={formData.data}
+                  onChange={event => setFormData({ ...formData, data: event.target.value })}
+                  required
+                />
+              </label>
 
-            <div className="archive-repertoire">
-              {REPERTOIRE_FIELDS.map(item => (
-                <label key={item.key}>
-                  {item.label}
-                  <select
-                    value={formData.repertorio[item.key] || ''}
-                    onChange={event => updateRepertoire(item.key, event.target.value)}
-                  >
-                    <option value="">Selecione uma música...</option>
-                    {songs.map(song => (
-                      <option key={song._id} value={song._id}>
-                        {song.titulo}{song.tom ? ` (${song.tom})` : ''}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              ))}
-            </div>
+              <div className="archive-repertoire">
+                {REPERTOIRE_FIELDS.map(item => (
+                  <label key={item.key}>
+                    {item.label}
+                    <select
+                      value={formData.repertorio[item.key] || ''}
+                      onChange={event => updateRepertoire(item.key, event.target.value)}
+                    >
+                      <option value="">Selecione uma música...</option>
+                      {songs.map(song => (
+                        <option key={song._id} value={song._id}>
+                          {song.titulo}{song.tom ? ` (${song.tom})` : ''}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                ))}
+              </div>
 
-            <div className="archive-actions">
-              <button type="submit" className="archive-primary">
-                {editingMass ? 'Atualizar missa' : 'Cadastrar missa'}
-              </button>
-              {editingMass && (
-                <button type="button" className="archive-secondary" onClick={cancelEdit}>
-                  Cancelar edição
+              <div className="archive-actions">
+                <button type="submit" className="archive-primary">
+                  {editingMass ? 'Atualizar missa' : 'Cadastrar missa'}
                 </button>
-              )}
-            </div>
-          </form>
+                {editingMass && (
+                  <button type="button" className="archive-secondary" onClick={cancelEdit}>
+                    Cancelar edição
+                  </button>
+                )}
+              </div>
+            </form>
+          )}
 
           <div className="archive-list">
             <div className="archive-list-header">
@@ -372,6 +376,7 @@ export function MassArchive() {
                 />
               </label>
             </div>
+
             {loading ? (
               <p>Carregando missas...</p>
             ) : missas.length === 0 ? (
@@ -400,15 +405,19 @@ export function MassArchive() {
                     <button type="button" className="archive-secondary" onClick={() => handleViewHtml(mass._id)}>
                       Ver HTML
                     </button>
-                    <button type="button" className="archive-secondary" onClick={() => startEdit(mass)}>
-                      Editar
-                    </button>
                     <button type="button" className="archive-secondary" onClick={() => { void handlePdf(mass._id); }}>
-                      PDF
+                      Baixar PDF
                     </button>
-                    <button type="button" className="archive-danger" onClick={() => { void handleDelete(mass._id); }}>
-                      Excluir
-                    </button>
+                    {isAdmin && (
+                      <>
+                        <button type="button" className="archive-secondary" onClick={() => startEdit(mass)}>
+                          Editar
+                        </button>
+                        <button type="button" className="archive-danger" onClick={() => { void handleDelete(mass._id); }}>
+                          Excluir
+                        </button>
+                      </>
+                    )}
                   </div>
                 </article>
               ))

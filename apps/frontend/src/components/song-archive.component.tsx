@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { api } from '../services/api';
 import type { LiturgicalMoment, Song } from '../types';
 import { ConfirmationModal } from './confirmation-modal.component';
+import { useAuth } from '../context/auth.context';
 
 const SONGS_PER_PAGE = 10;
 
@@ -57,6 +58,7 @@ function normalizeText(value: string) {
 }
 
 export function SongArchive() {
+  const { isAdmin } = useAuth();
   const [songs, setSongs] = useState<Song[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
@@ -65,6 +67,7 @@ export function SongArchive() {
   const [formData, setFormData] = useState<SongEditorState>(EMPTY_EDITOR);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [expandedSongId, setExpandedSongId] = useState<string | null>(null);
 
   const selectedSongId = editingSong?._id ?? null;
   const normalizedSearchTerm = normalizeText(searchTerm.trim());
@@ -191,13 +194,17 @@ export function SongArchive() {
     }
   };
 
+  const toggleExpandLyrics = (id: string) => {
+    setExpandedSongId(current => current === id ? null : id);
+  };
+
   return (
     <section className="archive-shell">
       <div className="archive-card">
         <div className="archive-header">
           <div>
-            <p className="archive-eyebrow">Acervo de músicas</p>
-            <h2>Visualize, edite e exclua músicas do banco</h2>
+            <p className="archive-eyebrow">Acervo de Músicas</p>
+            <h2>{isAdmin ? 'Visualize, edite e cadastre músicas' : 'Consulte o acervo de cantos e letras'}</h2>
           </div>
           <button type="button" className="archive-secondary" onClick={() => { void refreshSongs(); }}>
             Atualizar lista
@@ -206,63 +213,65 @@ export function SongArchive() {
 
         {message && <p className="archive-message">{message}</p>}
 
-        <div className="archive-layout">
-          <form className="archive-form" onSubmit={handleSubmit}>
-            <h3>{title}</h3>
+        <div className={`archive-layout ${!isAdmin ? 'archive-layout--full' : ''}`}>
+          {isAdmin && (
+            <form className="archive-form" onSubmit={handleSubmit}>
+              <h3>{title}</h3>
 
-            <label>
-              Título
-              <input
-                type="text"
-                value={formData.titulo}
-                onChange={event => setFormData({ ...formData, titulo: event.target.value })}
-                required
-              />
-            </label>
+              <label>
+                Título
+                <input
+                  type="text"
+                  value={formData.titulo}
+                  onChange={event => setFormData({ ...formData, titulo: event.target.value })}
+                  required
+                />
+              </label>
 
-            <label>
-              Tom
-              <input
-                type="text"
-                value={formData.tom}
-                onChange={event => setFormData({ ...formData, tom: event.target.value })}
-                required
-              />
-            </label>
+              <label>
+                Tom
+                <input
+                  type="text"
+                  value={formData.tom}
+                  onChange={event => setFormData({ ...formData, tom: event.target.value })}
+                  required
+                />
+              </label>
 
-            <label>
-              Momento litúrgico
-              <select
-                value={formData.momentoLiturgico}
-                onChange={event => setFormData({ ...formData, momentoLiturgico: event.target.value as LiturgicalMoment })}
-              >
-                {MOMENTS.map(moment => (
-                  <option key={moment} value={moment}>{moment}</option>
-                ))}
-              </select>
-            </label>
+              <label>
+                Momento litúrgico
+                <select
+                  value={formData.momentoLiturgico}
+                  onChange={event => setFormData({ ...formData, momentoLiturgico: event.target.value as LiturgicalMoment })}
+                >
+                  {MOMENTS.map(moment => (
+                    <option key={moment} value={moment}>{moment}</option>
+                  ))}
+                </select>
+              </label>
 
-            <label>
-              Letra
-              <textarea
-                value={formData.letra}
-                onChange={event => setFormData({ ...formData, letra: event.target.value })}
-                rows={8}
-                required
-              />
-            </label>
+              <label>
+                Letra
+                <textarea
+                  value={formData.letra}
+                  onChange={event => setFormData({ ...formData, letra: event.target.value })}
+                  rows={8}
+                  required
+                />
+              </label>
 
-            <div className="archive-actions">
-              <button type="submit" className="archive-primary">
-                {editingSong ? 'Atualizar música' : 'Cadastrar música'}
-              </button>
-              {editingSong && (
-                <button type="button" className="archive-secondary" onClick={cancelEdit}>
-                  Cancelar edição
+              <div className="archive-actions">
+                <button type="submit" className="archive-primary">
+                  {editingSong ? 'Atualizar música' : 'Cadastrar música'}
                 </button>
-              )}
-            </div>
-          </form>
+                {editingSong && (
+                  <button type="button" className="archive-secondary" onClick={cancelEdit}>
+                    Cancelar edição
+                  </button>
+                )}
+              </div>
+            </form>
+          )}
 
           <div className="archive-list">
             <div className="archive-list-header">
@@ -280,6 +289,7 @@ export function SongArchive() {
                 />
               </label>
             </div>
+
             {loading ? (
               <p>Carregando músicas...</p>
             ) : songs.length === 0 ? (
@@ -291,19 +301,54 @@ export function SongArchive() {
                 <article
                   key={song._id}
                   className={`archive-item${selectedSongId === song._id ? ' archive-item--selected' : ''}`}
+                  style={{ display: 'block' }}
                 >
-                  <div className="archive-item-content">
-                    <strong>{song.titulo}</strong>
-                    <p>{song.tom} · {song.momentoLiturgico}</p>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div className="archive-item-content">
+                      <strong>{song.titulo}</strong>
+                      <p>{song.tom ? `Tom: ${song.tom} · ` : ''}{song.momentoLiturgico}</p>
+                    </div>
+                    <div className="archive-item-actions">
+                      <button 
+                        type="button" 
+                        className="archive-secondary" 
+                        onClick={() => toggleExpandLyrics(song._id)}
+                      >
+                        {expandedSongId === song._id ? 'Ocultar Letra' : 'Ver Letra'}
+                      </button>
+                      {isAdmin && (
+                        <>
+                          <button type="button" className="archive-secondary" onClick={() => startEdit(song)}>
+                            Editar
+                          </button>
+                          <button type="button" className="archive-danger" onClick={() => { void handleDelete(song._id); }}>
+                            Excluir
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </div>
-                  <div className="archive-item-actions">
-                    <button type="button" className="archive-secondary" onClick={() => startEdit(song)}>
-                      Editar
-                    </button>
-                    <button type="button" className="archive-danger" onClick={() => { void handleDelete(song._id); }}>
-                      Excluir
-                    </button>
-                  </div>
+
+                  {expandedSongId === song._id && (
+                    <div style={{
+                      marginTop: '1rem',
+                      padding: '1rem',
+                      backgroundColor: '#f8f9fa',
+                      borderRadius: '6px',
+                      borderLeft: '4px solid #1976d2',
+                      whiteSpace: 'pre-wrap',
+                      lineHeight: '1.6',
+                      color: '#333'
+                    }}>
+                      {Array.isArray(song.letra) 
+                        ? song.letra.map((strophe, i) => (
+                            <div key={i} style={{ marginBottom: '0.8rem' }}>
+                              {Array.isArray(strophe) ? strophe.join('\n') : strophe}
+                            </div>
+                          ))
+                        : 'Letra indisponível'}
+                    </div>
+                  )}
                 </article>
               ))
             )}

@@ -1,3 +1,5 @@
+import { FaExclamationTriangle } from 'react-icons/fa';
+
 type ConfirmationModalProps = {
   title: string;
   description: string;
@@ -16,22 +18,28 @@ export function ConfirmationModal({
   onCancel
 }: ConfirmationModalProps) {
   return (
-    <div className="confirmation-modal" role="presentation" onClick={onCancel}>
+    <div className="modal-backdrop" role="presentation" onClick={onCancel}>
       <div
-        className="confirmation-modal__dialog"
+        className="modal-content"
         role="dialog"
         aria-modal="true"
         aria-labelledby="confirmation-modal-title"
         aria-describedby="confirmation-modal-description"
         onClick={event => event.stopPropagation()}
       >
-        <h3 id="confirmation-modal-title">{title}</h3>
-        <p id="confirmation-modal-description">{description}</p>
-        <div className="confirmation-modal__actions">
-          <button type="button" className="archive-secondary" onClick={onCancel}>
+        <div className="modal-header">
+          <h3 id="confirmation-modal-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--accent-color)' }}>
+            <FaExclamationTriangle /> {title}
+          </h3>
+        </div>
+        <p id="confirmation-modal-description" style={{ color: 'var(--text-muted)', marginBottom: '1.25rem' }}>
+          {description}
+        </p>
+        <div className="modal-actions">
+          <button type="button" className="btn-secondary" onClick={onCancel}>
             {cancelLabel}
           </button>
-          <button type="button" className="archive-danger" onClick={onConfirm}>
+          <button type="button" className="btn-danger" onClick={onConfirm}>
             {confirmLabel}
           </button>
         </div>

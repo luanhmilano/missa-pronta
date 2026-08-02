@@ -1,0 +1,62 @@
+name: CI/CD Pipeline - Músicas Missa
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  validate-and-build:
+    name: Validar e Compilar Monorepo
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Compilar Monorepo (Turborepo)
+        run: npm run build
+
+  deploy-frontend:
+    name: Deploy Frontend (Vercel)
+    needs: validate-and-build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repositório
+        uses: actions/checkout@v4
+
+      - name: Deploy na Vercel
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          working-directory: ./apps/frontend
+          vercel-args: '--prod'
+
+  deploy-backend:
+    name: Deploy Backend (Render)
+    needs: validate-and-build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Disparar Deploy no Render
+        run: |
+          if [ -n "${{ secrets.RENDER_DEPLOY_HOOK_URL }}" ]; then
+            curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
+          else
+            echo "RENDER_DEPLOY_HOOK_URL não configurado nas Secrets do GitHub. Pulando webhook."
+          fi

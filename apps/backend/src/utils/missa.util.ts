@@ -11,15 +11,17 @@ export const REPERTOIRE_FIELDS = [
 ].join(' ');
 
 export type PopulatedSong = {
+  _id?: string | { toString(): string };
   titulo: string;
   tom?: string;
   letra?: string[][];
+  momentoLiturgico?: string;
 };
 
 export type PopulatedMissa = {
   _id: string | { toString(): string };
   nome: string;
-  data: Date;
+  data: Date | string;
   repertorio: Record<string, PopulatedSong | null | undefined>;
 };
 
@@ -35,11 +37,12 @@ export const REPERTOIRE_LABELS: Record<string, string> = {
   final: 'FINAL'
 };
 
-export function formatDate(date: Date): string {
+export function formatDate(date: Date | string): string {
+  const d = typeof date === 'string' ? new Date(date) : date;
   return new Intl.DateTimeFormat('pt-BR', {
     dateStyle: 'long',
     timeZone: 'UTC'
-  }).format(date);
+  }).format(d);
 }
 
 export function formatLyricsText(letra?: string[][]): string {

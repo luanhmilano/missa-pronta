@@ -2,18 +2,22 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-COPY package.json package-lock.json turbo.json ./
-COPY apps/backend/package.json ./apps/backend/
+# Copia arquivos de dependências do backend
+COPY package.json package-lock.json* ./
 
-RUN npm ci --workspace=apps/backend
+# Instala todas as dependências (incluindo typescript para o build)
+RUN npm install
 
-COPY apps/backend ./apps/backend
+# Copia o código fonte do backend
+COPY . .
 
-RUN npm run build --workspace=apps/backend
+# Compila o TypeScript para JavaScript (dist/)
+RUN npm run build
 
 EXPOSE 3333
 
 ENV PORT=3333
 ENV NODE_ENV=production
 
-CMD ["npm", "start", "--workspace=apps/backend"]
+CMD ["npm", "start"]
+

@@ -1,70 +1,64 @@
 import type { Request, Response } from 'express';
-import Missa from '../models/missa.model.js';
+import MissaService from '../services/missa.service.js';
 import type { PopulatedMissa } from '../utils/missa.util.js';
-import { REPERTOIRE_FIELDS } from '../utils/missa.util.js';
 import { renderMassHtml } from '../utils/html.util.js';
 import { renderMassPdfBuffer, getPdfFileName } from '../utils/pdf.util.js';
 
 class MassController {
+  private getId(req: Request, res: Response): string | undefined {
+    const { id } = req.params;
+
+    if (typeof id !== 'string') {
+      res.status(400).json({ error: 'Identificador da missa inválido' });
+      return undefined;
+    }
+
+    return id;
+  }
+
   async create(req: Request, res: Response): Promise<void> {
     try {
-      console.debug('[backend][missas] create payload', req.body);
-      const newMissa = await Missa.create(req.body);
-    
-      const missaPopulada = await newMissa.populate(REPERTOIRE_FIELDS);
-      console.debug('[backend][missas] created', missaPopulada);
-      
+      const missaPopulada = await MissaService.create(req.body);
       res.status(201).json(missaPopulada);
     } catch (error: any) {
-      console.error('[backend][missas] create error', error);
       res.status(400).json({ error: 'Erro ao criar missa', details: error.message });
     }
   }
 
   async getAll(req: Request, res: Response): Promise<void> {
     try {
-      console.debug('[backend][missas] getAll requested');
-      const missas = await Missa.find()
-        .sort({ date: -1 })
-        .populate(REPERTOIRE_FIELDS);
-      console.debug('[backend][missas] getAll result', { count: missas.length });
-        
+      const missas = await MissaService.findAll();
       res.status(200).json(missas);
     } catch (error: any) {
-      console.error('[backend][missas] getAll error', error);
       res.status(500).json({ error: 'Erro ao buscar missas', details: error.message });
     }
   }
 
   async getById(req: Request, res: Response): Promise<void> {
     try {
-      const { id } = req.params;
-      console.debug('[backend][missas] getById', { id });
-      const mass = await Missa.findById(id).populate(REPERTOIRE_FIELDS);
+      const id = this.getId(req, res);
+      if (!id) return;
+      const mass = await MissaService.findById(id);
       
       if (!mass) {
-        console.debug('[backend][missas] getById not found', { id });
         res.status(404).json({ error: 'Missa não encontrada' });
         return;
       }
-      
-      console.debug('[backend][missas] getById result', mass);
+
       res.status(200).json(mass);
     } catch (error: any) {
-      console.error('[backend][missas] getById error', error);
       res.status(500).json({ error: 'Erro ao buscar missa', details: error.message });
     }
   }
 
   async getHtml(req: Request, res: Response): Promise<void> {
     try {
-      const { id } = req.params;
-      console.debug('[backend][missas] getHtml', { id });
+      const id = this.getId(req, res);
+      if (!id) return;
 
-      const mass = await Missa.findById(id).populate(REPERTOIRE_FIELDS);
+      const mass = await MissaService.findById(id);
 
       if (!mass) {
-        console.debug('[backend][missas] getHtml not found', { id });
         res.status(404).json({ error: 'Missa não encontrada' });
         return;
       }
@@ -72,20 +66,20 @@ class MassController {
       const html = renderMassHtml(mass.toObject() as unknown as PopulatedMissa);
       res.status(200).type('html').send(html);
     } catch (error: any) {
-      console.error('[backend][missas] getHtml error', error);
       res.status(500).json({ error: 'Erro ao gerar HTML da missa', details: error.message });
     }
   }
 
   async getPdf(req: Request, res: Response): Promise<void> {
     try {
-      const { id } = req.params;
+      const id = this.getId(req, res);
+      if (!id) return;
+
       console.debug('[backend][missas] getPdf', { id });
 
-      const mass = await Missa.findById(id).populate(REPERTOIRE_FIELDS);
+      const mass = await MissaService.findById(id);
 
       if (!mass) {
-        console.debug('[backend][missas] getPdf not found', { id });
         res.status(404).json({ error: 'Missa não encontrada' });
         return;
       }
@@ -107,40 +101,33 @@ class MassController {
 
   async update(req: Request, res: Response): Promise<void> {
     try {
-      const { id } = req.params;
-      console.debug('[backend][missas] update payload', { id, body: req.body });
-      const updatedMass = await Missa.findByIdAndUpdate(id, req.body, { 
-        new: true, 
-        runValidators: true 
-      }).populate(REPERTOIRE_FIELDS);
+      const id = this.getId(req, res);
+      if (!id) return;
+
+      const updatedMass = await MissaService.update(id, req.body);
 
       if (!updatedMass) {
-        console.debug('[backend][missas] update not found', { id });
         res.status(404).json({ error: 'Missa não encontrada' });
         return;
       }
 
-      console.debug('[backend][missas] updated', updatedMass);
       res.status(200).json(updatedMass);
     } catch (error: any) {
-      console.error('[backend][missas] update error', error);
       res.status(400).json({ error: 'Erro ao atualizar missa', details: error.message });
     }
   }
 
   async delete(req: Request, res: Response): Promise<void> {
     try {
-      const { id } = req.params;
-      console.debug('[backend][missas] delete requested', { id });
-      const deletedMass = await Missa.findByIdAndDelete(id);
+      const id = this.getId(req, res);
+      if (!id) return;
+
+      const deletedMass = await MissaService.delete(id);
 
       if (!deletedMass) {
-        console.debug('[backend][missas] delete not found', { id });
         res.status(404).json({ error: 'Missa não encontrada' });
         return;
       }
-
-      console.debug('[backend][missas] deleted', deletedMass);
       res.status(204).send();
     } catch (error: any) {
       console.error('[backend][missas] delete error', error);

@@ -1,4 +1,5 @@
 import PdfPrinter from 'pdfmake';
+import type { Content, TDocumentDefinitions } from 'pdfmake/interfaces.js';
 import type { PopulatedMissa } from './missa.util.js';
 import { buildMassViewModel, formatLyricsText } from './missa.util.js';
 
@@ -22,11 +23,54 @@ export function getPdfFileName(mass: PopulatedMissa): string {
   return `${safeName || 'missa'}.pdf`;
 }
 
+type PdfSection = {
+  label: string;
+  song: PopulatedMissa['repertorio'][string];
+};
+
+export function buildPdfSectionContent(section: PdfSection): Content[] {
+  const formattedLabel = section.label.replace(/_/g, ' ').toUpperCase();
+  const content: Content[] = [
+    {
+      text: formattedLabel,
+      style: 'sectionTitle',
+      margin: [0, 10, 0, 4]
+    }
+  ];
+
+  if (!section.song) {
+    content.push({
+      text: 'Música não selecionada.',
+      style: 'emptyText'
+    });
+    return content;
+  }
+
+  content.push(
+    {
+      text: section.song.titulo,
+      style: 'songTitle'
+    },
+    {
+      text: `Tom: ${section.song.tom || 'não informado'}`,
+      style: 'songTone'
+    }
+  );
+
+  const lyricsFormatted = formatLyricsText(section.song.letra);
+  content.push({
+    text: lyricsFormatted || 'Sem letra cadastrada.',
+    style: lyricsFormatted ? 'lyrics' : 'emptyText'
+  });
+
+  return content;
+}
+
 export async function renderMassPdfBuffer(mass: PopulatedMissa): Promise<Buffer> {
   const printer = new PdfPrinter(fonts);
   const viewModel = buildMassViewModel(mass);
 
-  const content: any[] = [
+  const content: Content[] = [
     { text: 'Arquidiocese Metropolitana de Belém', style: 'instHeader', alignment: 'center' },
     { text: 'Basílica Santuário de Nossa Senhora de Nazaré do Desterro', style: 'instHeader', alignment: 'center' },
     { text: 'Juventude Nazarena', style: 'instHeader', alignment: 'center' },
@@ -36,45 +80,10 @@ export async function renderMassPdfBuffer(mass: PopulatedMissa): Promise<Buffer>
   ];
 
   for (const section of viewModel.sections) {
-    const formattedLabel = section.label.replace(/_/g, ' ').toUpperCase();
-
-    content.push({
-      text: formattedLabel,
-      style: 'sectionTitle',
-      margin: [0, 10, 0, 4]
-    });
-
-    if (section.song) {
-      content.push({
-        text: section.song.titulo,
-        style: 'songTitle'
-      });
-      content.push({
-        text: `Tom: ${section.song.tom || 'não informado'}`,
-        style: 'songTone'
-      });
-
-      const lyricsFormatted = formatLyricsText(section.song.letra);
-      if (lyricsFormatted) {
-        content.push({
-          text: lyricsFormatted,
-          style: 'lyrics'
-        });
-      } else {
-        content.push({
-          text: 'Sem letra cadastrada.',
-          style: 'emptyText'
-        });
-      }
-    } else {
-      content.push({
-        text: 'Música não selecionada.',
-        style: 'emptyText'
-      });
-    }
+    content.push(...buildPdfSectionContent(section));
   }
 
-  const docDefinition: any = {
+  const docDefinition: TDocumentDefinitions = {
     content,
     pageSize: 'A4',
     pageMargins: [40, 45, 40, 40],

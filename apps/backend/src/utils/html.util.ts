@@ -1,32 +1,34 @@
-import type { PopulatedMissa } from './missa.util.js';
+import type { PopulatedMissa, PopulatedSong } from './missa.util.js';
 import { buildMassViewModel, formatLyricsText } from './missa.util.js';
+
+export function renderSongContent(song?: PopulatedSong | null): string {
+  if (!song) {
+    return '<p class="empty">Música não selecionada.</p>';
+  }
+
+  const tone = song.tom || 'não informado';
+  const lyricsFormatted = formatLyricsText(song.letra);
+  const lyrics = lyricsFormatted
+    ? `<pre class="lyrics">${lyricsFormatted}</pre>`
+    : `<p class="empty">Sem letra cadastrada.</p>`;
+
+  return `
+    <p class="song-title">${song.titulo}</p>
+    <p class="song-tone">Tom: ${tone}</p>
+    ${lyrics}
+  `;
+}
 
 export function renderMassHtml(mass: PopulatedMissa): string {
   const viewModel = buildMassViewModel(mass);
   const sectionsHtml = viewModel.sections
     .map((section) => {
       const label = section.label.replace(/_/g, ' ').toUpperCase();
-      let songContent = `<p class="empty">Música não selecionada.</p>`;
-
-      if (section.song) {
-        const title = section.song.titulo;
-        const tone = section.song.tom || 'não informado';
-        const lyricsFormatted = formatLyricsText(section.song.letra);
-        const lyrics = lyricsFormatted
-          ? `<pre class="lyrics">${lyricsFormatted}</pre>`
-          : `<p class="empty">Sem letra cadastrada.</p>`;
-
-        songContent = `
-          <p class="song-title">${title}</p>
-          <p class="song-tone">Tom: ${tone}</p>
-          ${lyrics}
-        `;
-      }
 
       return `
         <article class="card">
           <h2>${label}</h2>
-          ${songContent}
+          ${renderSongContent(section.song)}
         </article>
       `;
     })

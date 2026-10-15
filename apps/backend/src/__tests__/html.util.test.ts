@@ -1,7 +1,31 @@
-import { renderMassHtml } from '../utils/html.util.js';
+import { renderMassHtml, renderSongContent } from '../utils/html.util.js';
 import type { PopulatedMissa } from '../utils/missa.util.js';
 
 describe('html.util', () => {
+  it('deve renderizar o conteúdo de uma música com tom e letra', () => {
+    const html = renderSongContent({
+      titulo: 'Canto de Entrada',
+      tom: 'C',
+      letra: [['Primeira linha'], ['Segunda linha']],
+    });
+
+    expect(html).toContain('<p class="song-title">Canto de Entrada</p>');
+    expect(html).toContain('<p class="song-tone">Tom: C</p>');
+    expect(html).toContain('<pre class="lyrics">Primeira linha\n\nSegunda linha</pre>');
+  });
+
+  it('deve indicar quando a música não foi selecionada', () => {
+    expect(renderSongContent()).toBe('<p class="empty">Música não selecionada.</p>');
+    expect(renderSongContent(null)).toBe('<p class="empty">Música não selecionada.</p>');
+  });
+
+  it('deve indicar tom não informado e letra ausente', () => {
+    const html = renderSongContent({ titulo: 'Canto sem letra' });
+
+    expect(html).toContain('<p class="song-tone">Tom: não informado</p>');
+    expect(html).toContain('<p class="empty">Sem letra cadastrada.</p>');
+  });
+
   it('deve renderizar o HTML da missa corretamente com os títulos e estrofes', () => {
     const missaMock: PopulatedMissa = {
       _id: '123',
